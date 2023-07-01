@@ -49,6 +49,7 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
+// handleConnect handles the CONNECT packet
 func handleConnect(reader *bufio.Reader, writer *bufio.Writer) {
 	// Read the remaining length
 	remainingLength, err := readRemainingLength(reader)
@@ -67,38 +68,10 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer) {
 	}
 	log.Printf("Payload: %v\n", payload)
 
-	// // Read the protocol name
-	// protocolName, err := reader.ReadString(0)
-	// if err != nil {
-	// 	log.Println("Error reading protocol name:", err)
-	// 	return
-	// }
+	// TODO: Handling Connect Flags
+	// User Name Flag, Password Flag, Will Retain, Will QoS, Will Flag, Clean Session
 
-	// // Read the protocol level
-	// protocolLevel, err := reader.ReadByte()
-	// if err != nil {
-	// 	log.Println("Error reading protocol level:", err)
-	// 	return
-	// }
-
-	// // Read the connect flags
-	// connectFlags, err := reader.ReadByte()
-	// if err != nil {
-	// 	log.Println("Error reading connect flags:", err)
-	// 	return
-	// }
-
-	// // Read the keep alive
-	// // keepAlive, err := readUint16(reader)
-	// // if err != nil {
-	// // 	log.Println("Error reading keep alive:", err)
-	// // 	return
-	// // }
-
-	// log.Println("Protocol Name:", protocolName)
-	// log.Println("Protocol Level:", protocolLevel)
-	// log.Println("Connect Flags:", connectFlags)
-	// // log.Println("Keep Alive:", keepAlive)
+	// TODO: Handling Keep Alive.
 
 	// Send the connack
 	connack := []byte{0x20, 0x02, 0x00, 0x00}
