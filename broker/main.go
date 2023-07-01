@@ -95,6 +95,7 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer) {
 // TODO: SUBSCRIBE should store the subscription information in a map
 func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer) {
 	// Read the remaining length
+	// TODO: Create remainingLengthParser
 	remainingLength, err := readRemainingLength(reader)
 	if err != nil {
 		log.Println("Error reading remaining length:", err)
