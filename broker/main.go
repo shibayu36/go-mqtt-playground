@@ -92,6 +92,7 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer) {
 }
 
 // handleSubscribe handles the SUBSCRIBE packet
+// TODO: SUBSCRIBE should store the subscription information in a map
 func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer) {
 	// Read the remaining length
 	remainingLength, err := readRemainingLength(reader)
@@ -121,6 +122,7 @@ func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer) {
 	returnCodes := []byte{0x00}
 
 	// Send the SUBACK
+	// TODO: Send the SUBACK with the appropriate return codes
 	sendSubAck(writer, packetID, returnCodes)
 }
 
