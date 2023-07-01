@@ -100,6 +100,7 @@ func readRemainingLength(reader *bufio.Reader) (int, error) {
 			return 0, err
 		}
 
+		// 最下位7bitをvalueとして使い、最上位1bitを継続判定として利用している
 		value += int(digit&127) * multiplier
 		multiplier *= 128
 
