@@ -1,9 +1,13 @@
 package main
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 
 type TopicTree struct {
 	root *topicTreeNode
+	mu   sync.RWMutex
 }
 
 func NewTopicTree() *TopicTree {
@@ -13,6 +17,9 @@ func NewTopicTree() *TopicTree {
 }
 
 func (t *TopicTree) Add(topic string, client *Client) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	parts := strings.Split(topic, "/")
 
 	current := t.root
@@ -26,6 +33,9 @@ func (t *TopicTree) Add(topic string, client *Client) {
 }
 
 func (t *TopicTree) Get(topic string) []*Client {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	parts := strings.Split(topic, "/")
 
 	matchingClients := make([]*Client, 0)

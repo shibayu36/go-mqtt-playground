@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -58,6 +60,41 @@ func TestTopicTreeSubscribeAndClientsToPublish(t *testing.T) {
 
 		assert.ElementsMatch(t, tree.Get(("b")), []*Client{client1})
 	})
+}
+
+func TestTopicTreeConcurrency(t *testing.T) {
+	tree := NewTopicTree()
+
+	var wg sync.WaitGroup
+	const numGoroutines = 100
+
+	// 同時にクライアントを追加するgoroutineを起動
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			client := &Client{ID: fmt.Sprint(id)}
+			tree.Add("topic", client)
+		}(i)
+	}
+
+	// 同時にトピックを取得するgoroutineを起動
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tree.Get("topic")
+		}()
+	}
+
+	// すべてのgoroutineが終了するのを待つ
+	wg.Wait()
+
+	// 最終的な結果を確認
+	clients := tree.Get("topic")
+	if len(clients) != numGoroutines {
+		t.Errorf("Expected %d clients, but got %d", numGoroutines, len(clients))
+	}
 }
 
 func TestTopicTreeNodeIsWildcard(t *testing.T) {
