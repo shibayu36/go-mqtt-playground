@@ -13,35 +13,9 @@ func NewTopicTree() *TopicTree {
 }
 
 func (t *TopicTree) Add(topic string, client *Client) {
-	t.root.subscribe(topic, client)
-}
-
-func (t *TopicTree) Get(topic string) []*Client {
-	return t.root.clientsToPublish(topic)
-}
-
-type topicTreeNode struct {
-	part     string
-	clients  map[*Client]bool
-	subnodes map[string]*topicTreeNode
-}
-
-func newTopicTreeNode(part string) *topicTreeNode {
-	return &topicTreeNode{
-		part:     part,
-		clients:  make(map[*Client]bool),
-		subnodes: make(map[string]*topicTreeNode),
-	}
-}
-
-func (n *topicTreeNode) isWildcard() bool {
-	return n.part == "#"
-}
-
-func (n *topicTreeNode) subscribe(topic string, client *Client) {
 	parts := strings.Split(topic, "/")
 
-	current := n
+	current := t.root
 	for _, part := range parts {
 		if _, exists := current.subnodes[part]; !exists {
 			current.subnodes[part] = newTopicTreeNode(part)
@@ -51,7 +25,7 @@ func (n *topicTreeNode) subscribe(topic string, client *Client) {
 	current.clients[client] = true
 }
 
-func (n *topicTreeNode) clientsToPublish(topic string) []*Client {
+func (t *TopicTree) Get(topic string) []*Client {
 	parts := strings.Split(topic, "/")
 
 	matchingClients := make([]*Client, 0)
@@ -77,7 +51,25 @@ func (n *topicTreeNode) clientsToPublish(topic string) []*Client {
 			}
 		}
 	}
-	traverse(n, parts)
+	traverse(t.root, parts)
 
 	return matchingClients
+}
+
+type topicTreeNode struct {
+	part     string
+	clients  map[*Client]bool
+	subnodes map[string]*topicTreeNode
+}
+
+func newTopicTreeNode(part string) *topicTreeNode {
+	return &topicTreeNode{
+		part:     part,
+		clients:  make(map[*Client]bool),
+		subnodes: make(map[string]*topicTreeNode),
+	}
+}
+
+func (n *topicTreeNode) isWildcard() bool {
+	return n.part == "#"
 }
