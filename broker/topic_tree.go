@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 )
@@ -64,6 +65,26 @@ func (t *TopicTree) Get(topic string) []*Client {
 	traverse(t.root, parts)
 
 	return matchingClients
+}
+
+// Dump prints the topic tree to stdout for debug.
+func (t *TopicTree) Print() {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	var traverse func(node *topicTreeNode, prefix string)
+	traverse = func(node *topicTreeNode, prefix string) {
+		clientIDs := make([]string, 0)
+		for client := range node.clients {
+			clientIDs = append(clientIDs, client.ID)
+		}
+		fmt.Printf("%s%s clients: [%s]\n", prefix, node.part, strings.Join(clientIDs, ", "))
+
+		for _, subnode := range node.subnodes {
+			traverse(subnode, prefix+"  ")
+		}
+	}
+	traverse(t.root, "")
 }
 
 type topicTreeNode struct {

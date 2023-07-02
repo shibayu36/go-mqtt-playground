@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 )
@@ -14,6 +15,11 @@ func main() {
 	defer listener.Close()
 
 	log.Println("Listening on port 1883")
+
+	topicTree := NewTopicTree()
+
+	// TODO: ClientID should be the ID sent by CONNECT
+	clientId := 0
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -22,11 +28,12 @@ func main() {
 		}
 
 		log.Println("New connection accepted")
-		go handleConnection(conn)
+		go handleConnection(conn, topicTree, clientId)
+		clientId++
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, topicTree *TopicTree, clientId int) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
@@ -46,7 +53,7 @@ func handleConnection(conn net.Conn) {
 		case 1:
 			handleConnect(reader, writer)
 		case 8:
-			handleSubscribe(reader, writer)
+			handleSubscribe(reader, writer, topicTree, clientId)
 		}
 	}
 }
@@ -93,7 +100,7 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer) {
 
 // handleSubscribe handles the SUBSCRIBE packet
 // TODO: SUBSCRIBE should store the subscription information in a map
-func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer) {
+func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, topicTree *TopicTree, clientId int) {
 	// Read the remaining length
 	// TODO: Create remainingLengthParser
 	remainingLength, err := readRemainingLength(reader)
@@ -115,7 +122,13 @@ func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer) {
 	// Extract the packet ID from the payload
 	packetID := payload[0:2]
 
-	// TODO: Parse other bytes in the payload, and sends appropriate messages to the client.
+	// Extract the topic from the payload
+	topic := payload[2 : remainingLength-1]
+	topicTree.Add(string(topic), &Client{fmt.Sprint(clientId)})
+
+	// DEBUG: Print the topic tree
+	// TODO: I want to print the topic tree from management http API
+	topicTree.Print()
 
 	// TODO: Extract QoS levels from the payload
 
@@ -123,7 +136,7 @@ func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer) {
 	returnCodes := []byte{0x00}
 
 	// Send the SUBACK
-	// TODO: Send the SUBACK with the appropriate return codes
+	// TODO: Send the SUBACK with the appropriate return codes using QoS
 	sendSubAck(writer, packetID, returnCodes)
 }
 
