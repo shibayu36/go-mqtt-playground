@@ -2,45 +2,63 @@ package main
 
 import "strings"
 
-type TopicTreeNode struct {
-	part     string
-	clients  map[*Client]bool
-	subnodes map[string]*TopicTreeNode
+type TopicTree struct {
+	root *topicTreeNode
 }
 
-func NewTopicTreeNode(part string) *TopicTreeNode {
-	return &TopicTreeNode{
-		part:     part,
-		clients:  make(map[*Client]bool),
-		subnodes: make(map[string]*TopicTreeNode),
+func NewTopicTree() *TopicTree {
+	return &TopicTree{
+		root: newTopicTreeNode(""),
 	}
 }
 
-func (n *TopicTreeNode) IsWildcard() bool {
+func (t *TopicTree) Add(topic string, client *Client) {
+	t.root.subscribe(topic, client)
+}
+
+func (t *TopicTree) Get(topic string) []*Client {
+	return t.root.clientsToPublish(topic)
+}
+
+type topicTreeNode struct {
+	part     string
+	clients  map[*Client]bool
+	subnodes map[string]*topicTreeNode
+}
+
+func newTopicTreeNode(part string) *topicTreeNode {
+	return &topicTreeNode{
+		part:     part,
+		clients:  make(map[*Client]bool),
+		subnodes: make(map[string]*topicTreeNode),
+	}
+}
+
+func (n *topicTreeNode) isWildcard() bool {
 	return n.part == "#"
 }
 
-func (n *TopicTreeNode) Subscribe(topic string, client *Client) {
+func (n *topicTreeNode) subscribe(topic string, client *Client) {
 	parts := strings.Split(topic, "/")
 
 	current := n
 	for _, part := range parts {
 		if _, exists := current.subnodes[part]; !exists {
-			current.subnodes[part] = NewTopicTreeNode(part)
+			current.subnodes[part] = newTopicTreeNode(part)
 		}
 		current = current.subnodes[part]
 	}
 	current.clients[client] = true
 }
 
-func (n *TopicTreeNode) ClientsToPublish(topic string) []*Client {
+func (n *topicTreeNode) clientsToPublish(topic string) []*Client {
 	parts := strings.Split(topic, "/")
 
 	matchingClients := make([]*Client, 0)
 
-	var traverse func(*TopicTreeNode, []string)
-	traverse = func(node *TopicTreeNode, parts []string) {
-		if len(parts) == 0 || node.IsWildcard() {
+	var traverse func(*topicTreeNode, []string)
+	traverse = func(node *topicTreeNode, parts []string) {
+		if len(parts) == 0 || node.isWildcard() {
 			for client := range node.clients {
 				matchingClients = append(matchingClients, client)
 			}
