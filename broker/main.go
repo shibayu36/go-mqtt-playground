@@ -54,6 +54,8 @@ func handleConnection(conn net.Conn, topicTree *TopicTree, clientId int) {
 			handleConnect(reader, writer)
 		case 8:
 			handleSubscribe(reader, writer, topicTree, clientId)
+		case 12:
+			handlePingreq(writer)
 		}
 	}
 }
@@ -138,6 +140,24 @@ func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, topicTree *Topi
 	// Send the SUBACK
 	// TODO: Send the SUBACK with the appropriate return codes using QoS
 	sendSubAck(writer, packetID, returnCodes)
+}
+
+func handlePingreq(writer *bufio.Writer) {
+	log.Println("Received PINGREQ")
+
+	// PINGRESP packet is 0xD0 followed by 0x00
+	pingResp := []byte{0xD0, 0x00}
+
+	_, err := writer.Write(pingResp)
+	if err != nil {
+		log.Println("Error sending PINGRESP:", err)
+		return
+	}
+
+	err = writer.Flush()
+	if err != nil {
+		log.Println("Error flushing PINGRESP:", err)
+	}
 }
 
 func sendSubAck(writer *bufio.Writer, packetID []byte, returnCodes []byte) {
