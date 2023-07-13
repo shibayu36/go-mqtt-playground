@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
@@ -17,6 +19,7 @@ func main() {
 	log.Println("Listening on port 1883")
 
 	topicTree := NewTopicTree()
+	clientManager := NewClientManager()
 
 	// TODO: ClientID should be the ID sent by CONNECT
 	clientId := 0
@@ -28,12 +31,12 @@ func main() {
 		}
 
 		log.Println("New connection accepted")
-		go handleConnection(conn, topicTree, clientId)
+		go handleConnection(conn, topicTree, clientManager, clientId)
 		clientId++
 	}
 }
 
-func handleConnection(conn net.Conn, topicTree *TopicTree, clientId int) {
+func handleConnection(conn net.Conn, topicTree *TopicTree, clientManager *ClientManager, clientId int) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
@@ -51,7 +54,7 @@ func handleConnection(conn net.Conn, topicTree *TopicTree, clientId int) {
 
 		switch packetType >> 4 {
 		case 1:
-			handleConnect(reader, writer)
+			handleConnect(reader, writer, clientManager, clientId)
 		case 8:
 			handleSubscribe(reader, writer, topicTree, clientId)
 		case 12:
@@ -61,7 +64,7 @@ func handleConnection(conn net.Conn, topicTree *TopicTree, clientId int) {
 }
 
 // handleConnect handles the CONNECT packet
-func handleConnect(reader *bufio.Reader, writer *bufio.Writer) {
+func handleConnect(reader *bufio.Reader, writer *bufio.Writer, clientManager *ClientManager, clientId int) {
 	// Read the remaining length
 	remainingLength, err := readRemainingLength(reader)
 	if err != nil {
@@ -96,8 +99,11 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer) {
 		log.Println("Error flushing writer:", err)
 		return
 	}
-
 	log.Println("Sent CONNACK packet")
+
+	// Store the client in the client manager
+	clientManager.Add(&Client{fmt.Sprint(clientId)}, writer)
+	spew.Dump(clientManager.List())
 }
 
 // handleSubscribe handles the SUBSCRIBE packet
