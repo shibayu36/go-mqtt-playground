@@ -55,6 +55,8 @@ func handleConnection(conn net.Conn, topicTree *TopicTree, clientManager *Client
 		switch packetType >> 4 {
 		case 1:
 			handleConnect(reader, writer, clientManager, clientId)
+		case 3:
+			handlePublish(reader, writer, topicTree, clientManager, clientId)
 		case 8:
 			handleSubscribe(reader, writer, topicTree, clientId)
 		case 12:
@@ -104,6 +106,31 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer, clientManager *Cl
 	// Store the client in the client manager
 	clientManager.Add(&Client{fmt.Sprint(clientId)}, writer)
 	spew.Dump(clientManager.List())
+}
+
+// handlePublish handles the PUBLISH packet
+func handlePublish(reader *bufio.Reader, writer *bufio.Writer, topicTree *TopicTree, clientManager *ClientManager, clientId int) {
+	remainingLength, err := readRemainingLength(reader)
+	if err != nil {
+		log.Println("Error reading remaining length:", err)
+		return
+	}
+	log.Println("Remaining Length:", remainingLength)
+
+	// Read the topic name
+	topicLengthBytes := make([]byte, 2)
+	reader.Read(topicLengthBytes)
+	topicLen := int(topicLengthBytes[0])<<8 | int(topicLengthBytes[1])
+	topicBytes := make([]byte, topicLen)
+	reader.Read(topicBytes)
+	topic := string(topicBytes)
+
+	// Read the message payload
+	payloadLen := int(remainingLength) - 2 - topicLen
+	payload := make([]byte, payloadLen)
+	reader.Read(payload)
+
+	log.Printf("Received PUBLISH (topic: %s, message: %s)\n", topic, string(payload))
 }
 
 // handleSubscribe handles the SUBSCRIBE packet
