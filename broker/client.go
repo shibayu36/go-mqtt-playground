@@ -1,5 +1,6 @@
 package main
 
+type ClientID string
 type Client struct {
-	ID string
+	ID ClientID
 }

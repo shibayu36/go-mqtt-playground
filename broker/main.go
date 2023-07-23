@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"net"
 
@@ -104,7 +103,7 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer, clientManager *Cl
 	log.Println("Sent CONNACK packet")
 
 	// Store the client in the client manager
-	clientManager.Add(&Client{fmt.Sprint(clientId)}, writer)
+	clientManager.Add(&Client{ClientID(clientId)}, writer)
 	spew.Dump(clientManager.List())
 }
 
@@ -169,15 +168,23 @@ func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, topicTree *Topi
 	// Extract the packet ID from the payload
 	packetID := payload[0:2]
 
+	// Extract the topic length from the payload
+	topicLength := int(payload[2])<<8 | int(payload[3])
+
 	// Extract the topic from the payload
-	topic := payload[2 : remainingLength-1]
-	topicTree.Add(string(topic), &Client{fmt.Sprint(clientId)})
+	topicStart := 4
+	topicEnd := topicStart + topicLength
+	topic := payload[topicStart:topicEnd]
+	log.Printf("Topic: %s\n", string(topic))
+	topicTree.Add(string(topic), &Client{ClientID(clientId)})
 
 	// DEBUG: Print the topic tree
 	// TODO: I want to print the topic tree from management http API
 	topicTree.Print()
 
 	// TODO: Extract QoS levels from the payload
+
+	// TODO: Handle multiple topics in the payload
 
 	// Define the return codes for the subscription (for this example, assuming success for one subscription)
 	returnCodes := []byte{0x00}

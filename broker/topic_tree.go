@@ -76,7 +76,7 @@ func (t *TopicTree) Print() {
 	traverse = func(node *topicTreeNode, prefix string) {
 		clientIDs := make([]string, 0)
 		for client := range node.clients {
-			clientIDs = append(clientIDs, client.ID)
+			clientIDs = append(clientIDs, string(client.ID))
 		}
 		fmt.Printf("%s%s clients: [%s]\n", prefix, node.part, strings.Join(clientIDs, ", "))
 

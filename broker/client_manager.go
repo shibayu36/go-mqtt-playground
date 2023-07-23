@@ -6,13 +6,13 @@ import (
 )
 
 type ClientManager struct {
-	clients map[*Client]*bufio.Writer
+	clients map[ClientID]*bufio.Writer
 	mu      sync.Mutex
 }
 
 func NewClientManager() *ClientManager {
 	return &ClientManager{
-		clients: make(map[*Client]*bufio.Writer),
+		clients: make(map[ClientID]*bufio.Writer),
 	}
 }
 
@@ -20,24 +20,24 @@ func (cm *ClientManager) Add(client *Client, writer *bufio.Writer) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	cm.clients[client] = writer
+	cm.clients[client.ID] = writer
 }
 
 func (cm *ClientManager) Get(client *Client) *bufio.Writer {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	return cm.clients[client]
+	return cm.clients[client.ID]
 }
 
-func (cm *ClientManager) List() []*Client {
+func (cm *ClientManager) List() []ClientID {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	clients := make([]*Client, 0)
+	clientIDs := make([]ClientID, 0)
 	for client := range cm.clients {
-		clients = append(clients, client)
+		clientIDs = append(clientIDs, client)
 	}
 
-	return clients
+	return clientIDs
 }
