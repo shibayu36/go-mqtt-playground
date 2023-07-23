@@ -23,6 +23,13 @@ func (cm *ClientManager) Add(client *Client, writer *bufio.Writer) {
 	cm.clients[client] = writer
 }
 
+func (cm *ClientManager) Get(client *Client) *bufio.Writer {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	return cm.clients[client]
+}
+
 func (cm *ClientManager) List() []*Client {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()

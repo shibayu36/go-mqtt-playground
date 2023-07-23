@@ -131,6 +131,18 @@ func handlePublish(reader *bufio.Reader, writer *bufio.Writer, topicTree *TopicT
 	reader.Read(payload)
 
 	log.Printf("Received PUBLISH (topic: %s, message: %s)\n", topic, string(payload))
+
+	clients := topicTree.Get(topic)
+	spew.Dump(clients)
+	for _, client := range clients {
+		log.Printf("Sending message to client %s\n", client.ID)
+		writer := clientManager.Get(client)
+		sendPublish(writer, topic, string(payload))
+	}
+
+	// TODO: Handle QoS
+
+	// when QoS == 0, no response is required
 }
 
 // handleSubscribe handles the SUBSCRIBE packet
@@ -212,6 +224,30 @@ func sendSubAck(writer *bufio.Writer, packetID []byte, returnCodes []byte) {
 	writer.Write(returnCodes)
 
 	// Flush the writer to ensure all data is sent
+	writer.Flush()
+}
+
+// sendPublish sends a PUBLISH packet to the client
+func sendPublish(writer *bufio.Writer, topic string, payload string) {
+	// Packet Type for PUBLISH is 0011 0000 (0x30)
+	packetType := byte(0x30)
+
+	// Remaining Length = topic length + 2 bytes for topic length + payload length
+	remainingLength := len(topic) + 2 + len(payload)
+	remainingLengthBytes := encodeRemainingLength(remainingLength)
+
+	// Write Fixed Header
+	writer.WriteByte(packetType)
+	writer.Write(remainingLengthBytes)
+
+	// Write Variable Header
+	writer.WriteByte(byte(len(topic) >> 8))
+	writer.WriteByte(byte(len(topic)))
+	writer.WriteString(topic)
+
+	// Write Payload
+	writer.WriteString(payload)
+
 	writer.Flush()
 }
 
