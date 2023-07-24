@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 
@@ -17,11 +18,8 @@ func main() {
 
 	log.Println("Listening on port 1883")
 
-	topicTree := NewTopicTree()
-	clientManager := NewClientManager()
+	handler := NewHandler()
 
-	// TODO: ClientID should be the ID sent by CONNECT
-	clientId := 0
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -30,38 +28,17 @@ func main() {
 		}
 
 		log.Println("New connection accepted")
-		go handleConnection(conn, topicTree, clientManager, clientId)
-		clientId++
+		go handleConn(conn, handler)
 	}
 }
 
-func handleConnection(conn net.Conn, topicTree *TopicTree, clientManager *ClientManager, clientId int) {
+func handleConn(conn net.Conn, handler *Handler) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
 
-	for {
-		// Read the first byte (this should be the packet type)
-		packetType, err := reader.ReadByte()
-		if err != nil {
-			log.Println("Error reading packet type:", err)
-			return
-		}
-
-		log.Println("Packet Type:", packetType)
-
-		switch packetType >> 4 {
-		case 1:
-			handleConnect(reader, writer, clientManager, clientId)
-		case 3:
-			handlePublish(reader, writer, topicTree, clientManager, clientId)
-		case 8:
-			handleSubscribe(reader, writer, topicTree, clientId)
-		case 12:
-			handlePingreq(writer)
-		}
-	}
+	handler.Handle(reader, writer)
 }
 
 // handleConnect handles the CONNECT packet
@@ -103,7 +80,7 @@ func handleConnect(reader *bufio.Reader, writer *bufio.Writer, clientManager *Cl
 	log.Println("Sent CONNACK packet")
 
 	// Store the client in the client manager
-	clientManager.Add(&Client{ClientID(clientId)}, writer)
+	clientManager.Add(&Client{ClientID(fmt.Sprint(clientId))}, writer)
 	spew.Dump(clientManager.List())
 }
 
@@ -176,7 +153,7 @@ func handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, topicTree *Topi
 	topicEnd := topicStart + topicLength
 	topic := payload[topicStart:topicEnd]
 	log.Printf("Topic: %s\n", string(topic))
-	topicTree.Add(string(topic), &Client{ClientID(clientId)})
+	topicTree.Add(string(topic), &Client{ClientID(fmt.Sprint(clientId))})
 
 	// DEBUG: Print the topic tree
 	// TODO: I want to print the topic tree from management http API
