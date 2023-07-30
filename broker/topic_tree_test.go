@@ -73,7 +73,7 @@ func TestTopicTreeConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			client := &Client{ID: fmt.Sprint(id)}
+			client := &Client{ID: ClientID(fmt.Sprint(id))}
 			tree.Add("topic", client)
 		}(i)
 	}
