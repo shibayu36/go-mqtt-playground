@@ -10,26 +10,26 @@ import (
 )
 
 type Handler struct {
-	TopicTree     *TopicTree
-	ClientManager *ClientManager
-	NextClientId  int
+	topicTree     *TopicTree
+	clientManager *ClientManager
+	nextClientId  int
 	mu            sync.Mutex
 }
 
 func NewHandler() *Handler {
 	return &Handler{
-		TopicTree:     NewTopicTree(),
-		ClientManager: NewClientManager(),
-		NextClientId:  0,
+		topicTree:     NewTopicTree(),
+		clientManager: NewClientManager(),
+		nextClientId:  0,
 	}
 }
 
 func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 	// TODO: ClientID should be the ID sent by CONNECT
-	currentClientId := h.NextClientId
+	currentClientId := h.nextClientId
 
 	h.mu.Lock()
-	h.NextClientId++
+	h.nextClientId++
 	h.mu.Unlock()
 
 	for {
@@ -93,8 +93,8 @@ func (h *Handler) handleConnect(reader *bufio.Reader, writer *bufio.Writer, clie
 	log.Println("Sent CONNACK packet")
 
 	// Store the client in the client manager
-	h.ClientManager.Add(&Client{ClientID(fmt.Sprint(clientId))}, writer)
-	spew.Dump(h.ClientManager.List())
+	h.clientManager.Add(&Client{ClientID(fmt.Sprint(clientId))}, writer)
+	spew.Dump(h.clientManager.List())
 }
 
 // handlePublish handles the PUBLISH packet
@@ -121,11 +121,11 @@ func (h *Handler) handlePublish(reader *bufio.Reader, writer *bufio.Writer, clie
 
 	log.Printf("Received PUBLISH (topic: %s, message: %s)\n", topic, string(payload))
 
-	clients := h.TopicTree.Get(topic)
+	clients := h.topicTree.Get(topic)
 	spew.Dump(clients)
 	for _, client := range clients {
 		log.Printf("Sending message to client %s\n", client.ID)
-		writer := h.ClientManager.Get(client)
+		writer := h.clientManager.Get(client)
 		h.sendPublish(writer, topic, string(payload))
 	}
 
@@ -166,11 +166,11 @@ func (h *Handler) handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, cl
 	topicEnd := topicStart + topicLength
 	topic := payload[topicStart:topicEnd]
 	log.Printf("Topic: %s\n", string(topic))
-	h.TopicTree.Add(string(topic), &Client{ClientID(fmt.Sprint(clientId))})
+	h.topicTree.Add(string(topic), &Client{ClientID(fmt.Sprint(clientId))})
 
 	// DEBUG: Print the topic tree
 	// TODO: I want to print the topic tree from management http API
-	h.TopicTree.Print()
+	h.topicTree.Print()
 
 	// TODO: Extract QoS levels from the payload
 
