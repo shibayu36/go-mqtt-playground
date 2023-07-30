@@ -27,7 +27,7 @@ func TestHandleConnect(t *testing.T) {
 	buf := &bytes.Buffer{}
 	writer := bufio.NewWriter(buf)
 
-	handler.Handle(reader, writer)
+	handler.handleConnect(reader, writer, 0)
 
 	// Check if the CONNACK packet was written to the writer
 	expectedConnack := []byte{0x20, 0x02, 0x00, 0x00}
@@ -51,7 +51,7 @@ func TestHandlePingreq(t *testing.T) {
 	buf := &bytes.Buffer{}
 	writer := bufio.NewWriter(buf)
 
-	handler.Handle(reader, writer)
+	handler.handlePingreq(reader, writer)
 
 	// Check if the PINGRESP packet was written to the writer
 	expectedPingresp := []byte{0xD0, 0x00}

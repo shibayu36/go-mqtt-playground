@@ -34,11 +34,12 @@ func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 
 	for {
 		// Read the first byte (this should be the packet type)
-		packetType, err := reader.ReadByte()
+		bs, err := reader.Peek(1)
 		if err != nil {
 			log.Println("Error reading packet type:", err)
 			return
 		}
+		packetType := bs[0]
 
 		log.Println("Packet Type:", packetType)
 
@@ -56,6 +57,9 @@ func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 }
 
 func (h *Handler) handleConnect(reader *bufio.Reader, writer *bufio.Writer, clientId int) {
+	// Read the first byte (this should be the packet type)
+	reader.ReadByte()
+
 	// Read the remaining length
 	remainingLength, err := readRemainingLength(reader)
 	if err != nil {
@@ -99,6 +103,9 @@ func (h *Handler) handleConnect(reader *bufio.Reader, writer *bufio.Writer, clie
 
 // handlePublish handles the PUBLISH packet
 func (h *Handler) handlePublish(reader *bufio.Reader, writer *bufio.Writer, clientId int) {
+	// Read the first byte (this should be the packet type)
+	reader.ReadByte()
+
 	remainingLength, err := readRemainingLength(reader)
 	if err != nil {
 		log.Println("Error reading remaining length:", err)
@@ -137,6 +144,9 @@ func (h *Handler) handlePublish(reader *bufio.Reader, writer *bufio.Writer, clie
 // handleSubscribe handles the SUBSCRIBE packet
 // TODO: SUBSCRIBE should store the subscription information in a map
 func (h *Handler) handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, clientId int) {
+	// Read the first byte (this should be the packet type)
+	reader.ReadByte()
+
 	// Read the remaining length
 	// TODO: Create remainingLengthParser
 	remainingLength, err := readRemainingLength(reader)
@@ -185,6 +195,9 @@ func (h *Handler) handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, cl
 }
 
 func (h *Handler) handlePingreq(reader *bufio.Reader, writer *bufio.Writer) {
+	// Read the first byte (this should be the packet type)
+	reader.ReadByte()
+
 	log.Println("Received PINGREQ")
 
 	// Pingreq has no payload, so read the remaining length and ignore it
