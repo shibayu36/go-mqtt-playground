@@ -32,6 +32,7 @@ func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 	h.nextClientId++
 	h.mu.Unlock()
 
+	// TODO: At first, CONNECT is required. After that, connection can handle PUBLISH, SUBSCRIBE, and PINGREQ.
 	for {
 		// Read the first byte (this should be the packet type)
 		bs, err := reader.Peek(1)
