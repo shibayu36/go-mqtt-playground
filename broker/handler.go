@@ -50,7 +50,7 @@ func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 		case 8:
 			h.handleSubscribe(reader, writer, currentClientId)
 		case 12:
-			h.handlePingreq(writer)
+			h.handlePingreq(reader, writer)
 		}
 	}
 }
@@ -184,13 +184,20 @@ func (h *Handler) handleSubscribe(reader *bufio.Reader, writer *bufio.Writer, cl
 	h.sendSubAck(writer, packetID, returnCodes)
 }
 
-func (h *Handler) handlePingreq(writer *bufio.Writer) {
+func (h *Handler) handlePingreq(reader *bufio.Reader, writer *bufio.Writer) {
 	log.Println("Received PINGREQ")
+
+	// Pingreq has no payload, so read the remaining length and ignore it
+	_, err := readRemainingLength(reader)
+	if err != nil {
+		log.Println("Error reading remaining length:", err)
+		return
+	}
 
 	// PINGRESP packet is 0xD0 followed by 0x00
 	pingResp := []byte{0xD0, 0x00}
 
-	_, err := writer.Write(pingResp)
+	_, err = writer.Write(pingResp)
 	if err != nil {
 		log.Println("Error sending PINGRESP:", err)
 		return
