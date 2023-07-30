@@ -37,3 +37,23 @@ func TestHandleConnect(t *testing.T) {
 	assert.Equal(t, 1, len(handler.clientManager.List()))
 	assert.NotEmpty(t, handler.clientManager.Get(&Client{ClientID("0")}))
 }
+
+func TestHandlePingreq(t *testing.T) {
+	handler := NewHandler()
+
+	// Create a mock PINGREQ packet
+	packet := []byte{
+		0xC0, // Packet type for PINGREQ
+		0x00, // Remaining length
+	}
+
+	reader := bufio.NewReader(bytes.NewReader(packet))
+	buf := &bytes.Buffer{}
+	writer := bufio.NewWriter(buf)
+
+	handler.Handle(reader, writer)
+
+	// Check if the PINGRESP packet was written to the writer
+	expectedPingresp := []byte{0xD0, 0x00}
+	assert.Equal(t, expectedPingresp, buf.Bytes(), "Expected PINGRESP to be written to the writer")
+}
