@@ -32,7 +32,19 @@ func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 	h.nextClientId++
 	h.mu.Unlock()
 
-	// TODO: At first, CONNECT is required. After that, connection can handle PUBLISH, SUBSCRIBE, and PINGREQ.
+	// First packet must be CONNECT
+	bs, err := reader.Peek(1)
+	if err != nil {
+		log.Println("Error reading packet type:", err)
+		return
+	}
+	packetType := bs[0]
+	if packetType>>4 != 1 {
+		log.Println("First packet must be CONNECT")
+		return
+	}
+	h.handleConnect(reader, writer, currentClientId)
+
 	for {
 		// Read the first byte (this should be the packet type)
 		bs, err := reader.Peek(1)
@@ -46,7 +58,8 @@ func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 
 		switch packetType >> 4 {
 		case 1:
-			h.handleConnect(reader, writer, currentClientId)
+			log.Println("Received CONNECT packet twice")
+			return
 		case 3:
 			h.handlePublish(reader, writer, currentClientId)
 		case 8:
