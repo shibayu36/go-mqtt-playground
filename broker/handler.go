@@ -66,6 +66,9 @@ func (h *Handler) Handle(reader *bufio.Reader, writer *bufio.Writer) {
 			h.handleSubscribe(reader, writer, currentClientId)
 		case 12:
 			h.handlePingreq(reader, writer)
+		default:
+			log.Println("Unsupported packet type:", packetType)
+			reader.ReadByte() // Read the byte to advance the reader
 		}
 	}
 }
